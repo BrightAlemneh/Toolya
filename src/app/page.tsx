@@ -6,7 +6,7 @@ import { Button } from "../components/ui/button";
 import Script from "next/script";
 import { PDFDocument } from "pdf-lib";
 import QRCode from "qrcode";
-import lamejs from "lamejs"; // <<--- MOVE IT HERE
+//import lamejs from "lamejs"; // <<--- MOVE IT HERE
 
 import {
   Sun,
@@ -440,7 +440,7 @@ export default function ToolyaHomepage() {
         </>
       ),
     },
-   
+   /*
 {
   name: "Text-to-Speech",
   description: "Convert text to speech and download as MP3.",
@@ -450,7 +450,7 @@ export default function ToolyaHomepage() {
     const speakAndDownloadMP3 = async () => {
       if (!ttsText) return;
 
-      // 1️⃣ Use SpeechSynthesis to generate audio
+      // 1️ Use SpeechSynthesis to generate audio
       const utterance = new SpeechSynthesisUtterance(ttsText);
       if (selectedVoice) utterance.voice = selectedVoice;
       utterance.rate = rate;
@@ -558,7 +558,7 @@ export default function ToolyaHomepage() {
     );
   },
 },
-
+*/
   ];
 
   const filteredTools = tools.filter((tool) =>
