@@ -7,8 +7,8 @@ import Script from "next/script";
 import { PDFDocument } from "pdf-lib";
 import QRCode from "qrcode";
 //import lamejs from "lamejs"; // <<--- MOVE IT HERE
-
-import {
+import {Sun, Moon,} from "lucide-react";
+/*import {
   Sun,
   Moon,
   FileText,
@@ -20,7 +20,7 @@ import {
   Scissors,
   Volume2,
 } from "lucide-react";
-
+ */
 export default function ToolyaHomepage() {
   // Dark mode
   const [darkMode, setDarkMode] = useState(false);
@@ -231,12 +231,12 @@ export default function ToolyaHomepage() {
     alert("Short URL copied!");
   };
 
-  /** ---------------- TEXT-TO-SPEECH ---------------- */
+  /** ---------------- TEXT-TO-SPEECH ----------------
   const [ttsText, setTtsText] = useState("");
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selectedVoice, setSelectedVoice] = useState<SpeechSynthesisVoice | null>(null);
   const [rate, setRate] = useState(1);
-  const [pitch, setPitch] = useState(1);
+  const [pitch, setPitch] = useState(1); 
 
   useEffect(() => {
     const synth = window.speechSynthesis;
@@ -259,7 +259,7 @@ export default function ToolyaHomepage() {
     utterance.pitch = pitch;
     window.speechSynthesis.speak(utterance);
   };
-
+*/
   /** ---------------- TOOLS ---------------- */
   const tools = [
     {
