@@ -1,102 +1,672 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
+import { useState, useRef, useEffect } from "react";
+import { Card, CardContent } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import Script from "next/script";
+import { PDFDocument } from "pdf-lib";
+import QRCode from "qrcode";
+import lamejs from "lamejs"; // <<--- MOVE IT HERE
+
+import {
+  Sun,
+  Moon,
+  FileText,
+  Camera,
+  Link,
+  Code,
+  Calculator,
+  Image as ImageIcon,
+  Scissors,
+  Volume2,
+} from "lucide-react";
+
+export default function ToolyaHomepage() {
+  // Dark mode
+  const [darkMode, setDarkMode] = useState(false);
+
+  // Menu refs
+  const homeRef = useRef<HTMLDivElement>(null);
+  const toolsRef = useRef<HTMLDivElement>(null);
+  const aboutRef = useRef<HTMLDivElement>(null);
+  const contactRef = useRef<HTMLDivElement>(null);
+
+  const scrollToSection = (ref: React.RefObject<HTMLDivElement>) => {
+    ref.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  // Live search
+  const [searchQuery, setSearchQuery] = useState("");
+
+  /** ---------------- PDF MERGER ---------------- */
+  const [pdfFiles, setPdfFiles] = useState<File[]>([]);
+  const [mergeProgress, setMergeProgress] = useState<number>(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePdfUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const newFiles = Array.from(e.target.files);
+      setPdfFiles([...pdfFiles, ...newFiles]);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    if (e.dataTransfer.files) {
+      const newFiles = Array.from(e.dataTransfer.files).filter(
+        (file) => file.type === "application/pdf"
+      );
+      setPdfFiles([...pdfFiles, ...newFiles]);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+  };
+
+  const mergePdfFiles = async () => {
+    if (pdfFiles.length < 2) {
+      alert("Please select at least 2 PDF files to merge.");
+      return;
+    }
+    setMergeProgress(10);
+
+    const mergedPdf = await PDFDocument.create();
+    for (let i = 0; i < pdfFiles.length; i++) {
+      const file = pdfFiles[i];
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await PDFDocument.load(arrayBuffer);
+      const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+      copiedPages.forEach((page) => mergedPdf.addPage(page));
+      setMergeProgress(Math.round(((i + 1) / pdfFiles.length) * 100));
+    }
+
+    const mergedPdfBytes = await mergedPdf.save();
+    const blob = new Blob([mergedPdfBytes], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "merged.pdf";
+    a.click();
+    URL.revokeObjectURL(url);
+    setMergeProgress(0);
+  };
+
+  /** ---------------- PDF SPLITTER ---------------- */
+  const [splitFile, setSplitFile] = useState<File | null>(null);
+  const [pageRange, setPageRange] = useState("");
+
+  const handlePdfSplit = async () => {
+    if (!splitFile || !pageRange) {
+      alert("Please select a PDF and page range (e.g., 1-3,5)");
+      return;
+    }
+    const arrayBuffer = await splitFile.arrayBuffer();
+    const pdf = await PDFDocument.load(arrayBuffer);
+    const newPdf = await PDFDocument.create();
+
+    const ranges = pageRange.split(",").map((r) => r.trim());
+    for (const range of ranges) {
+      if (range.includes("-")) {
+        const [start, end] = range.split("-").map(Number);
+        for (let i = start; i <= end; i++) {
+          const [page] = await newPdf.copyPages(pdf, [i - 1]);
+          newPdf.addPage(page);
+        }
+      } else {
+        const pageNum = Number(range);
+        const [page] = await newPdf.copyPages(pdf, [pageNum - 1]);
+        newPdf.addPage(page);
+      }
+    }
+
+    const newBytes = await newPdf.save();
+    const blob = new Blob([newBytes], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "split.pdf";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  /** ---------------- QR CODE ---------------- */
+  const [qrText, setQrText] = useState("");
+  const [qrUrl, setQrUrl] = useState<string | null>(null);
+
+  const generateQrCode = async () => {
+    if (!qrText) return;
+    const url = await QRCode.toDataURL(qrText);
+    setQrUrl(url);
+  };
+
+  const downloadQrCode = () => {
+    if (!qrUrl) return;
+    const a = document.createElement("a");
+    a.href = qrUrl;
+    a.download = "qrcode.png";
+    a.click();
+  };
+
+  const copyQrCodeUrl = () => {
+    if (!qrUrl) return;
+    navigator.clipboard.writeText(qrUrl);
+    alert("QR code URL copied!");
+  };
+
+  /** ---------------- YOUTUBE THUMBNAIL ---------------- */
+  const [youtubeUrl, setYoutubeUrl] = useState("");
+  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
+
+  const generateThumbnail = () => {
+    const match = youtubeUrl.match(
+      /(?:youtube\.com\/.*v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/
+    );
+    if (!match || !match[1]) {
+      alert("Invalid YouTube URL");
+      return;
+    }
+    const videoId = match[1];
+    setThumbnailUrl(`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`);
+  };
+
+  const downloadThumbnail = async () => {
+    if (!thumbnailUrl) return;
+    const response = await fetch(thumbnailUrl);
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "youtube_thumbnail.jpg";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const copyThumbnailUrl = () => {
+    if (!thumbnailUrl) return;
+    navigator.clipboard.writeText(thumbnailUrl);
+    alert("Thumbnail URL copied!");
+  };
+
+  /** ---------------- IMAGE CONVERTER ---------------- */
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [targetFormat, setTargetFormat] = useState("png");
+  const [convertedImage, setConvertedImage] = useState<string | null>(null);
+
+  const handleImageConvert = () => {
+    if (!imageFile) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext("2d");
+        ctx?.drawImage(img, 0, 0);
+        const converted = canvas.toDataURL(`image/${targetFormat}`);
+        setConvertedImage(converted);
+      };
+      img.src = e.target?.result as string;
+    };
+    reader.readAsDataURL(imageFile);
+  };
+
+  /** ---------------- URL SHORTENER ---------------- */
+  const [longUrl, setLongUrl] = useState("");
+  const [shortUrl, setShortUrl] = useState<string | null>(null);
+
+  const shortenUrl = () => {
+    if (!longUrl.startsWith("http")) {
+      alert("Enter a valid URL (must start with http/https)");
+      return;
+    }
+    const fakeShort = "https://short.ly/" + btoa(longUrl).slice(0, 6);
+    setShortUrl(fakeShort);
+  };
+
+  const copyShortUrl = () => {
+    if (!shortUrl) return;
+    navigator.clipboard.writeText(shortUrl);
+    alert("Short URL copied!");
+  };
+
+  /** ---------------- TEXT-TO-SPEECH ---------------- */
+  const [ttsText, setTtsText] = useState("");
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [selectedVoice, setSelectedVoice] = useState<SpeechSynthesisVoice | null>(null);
+  const [rate, setRate] = useState(1);
+  const [pitch, setPitch] = useState(1);
+
+  useEffect(() => {
+    const synth = window.speechSynthesis;
+    const loadVoices = () => {
+      const voiceList = synth.getVoices();
+      setVoices(voiceList);
+      if (voiceList.length > 0) setSelectedVoice(voiceList[0]);
+    };
+    loadVoices();
+    if (speechSynthesis.onvoiceschanged !== undefined) {
+      speechSynthesis.onvoiceschanged = loadVoices;
+    }
+  }, []);
+
+  const speakText = () => {
+    if (!ttsText) return;
+    const utterance = new SpeechSynthesisUtterance(ttsText);
+    if (selectedVoice) utterance.voice = selectedVoice;
+    utterance.rate = rate;
+    utterance.pitch = pitch;
+    window.speechSynthesis.speak(utterance);
+  };
+
+  /** ---------------- TOOLS ---------------- */
+  const tools = [
+    {
+      name: "PDF Merger",
+      description: "Quickly merge multiple PDF files.",
+      render: () => (
+        <>
+          <div
+            className="mb-2 p-6 border-dashed border-2 border-gray-300 rounded cursor-pointer hover:bg-gray-100"
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <p>Drag & drop PDF files here or click to select</p>
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept="application/pdf"
+            onChange={handlePdfUpload}
+            className="hidden"
+          />
+          {pdfFiles.map((file, i) => (
+            <p key={i}>{file.name}</p>
+          ))}
+          {mergeProgress > 0 && <p>Merging... {mergeProgress}%</p>}
+          <Button onClick={mergePdfFiles}>Merge PDFs</Button>
+        </>
+      ),
+    },
+    {
+      name: "PDF Splitter",
+      description: "Extract pages from a PDF.",
+      render: () => (
+        <>
+          <input
+            type="file"
+            accept="application/pdf"
+            onChange={(e) => e.target.files && setSplitFile(e.target.files[0])}
+          />
+          <input
+            type="text"
+            placeholder="Page range (e.g. 1-3,5)"
+            value={pageRange}
+            onChange={(e) => setPageRange(e.target.value)}
+            className="ml-2 px-2 py-1 border rounded"
+          />
+          <Button onClick={handlePdfSplit} className="ml-2">
+            Split PDF
+          </Button>
+        </>
+      ),
+    },
+    {
+      name: "QR Code Generator",
+      description: "Generate QR codes from text or URLs.",
+      render: () => (
+        <>
+          <input
+            type="text"
+            placeholder="Enter text or URL"
+            value={qrText}
+            onChange={(e) => setQrText(e.target.value)}
+            className="mb-2 px-3 py-2 w-full rounded border"
+          />
+          <Button onClick={generateQrCode}>Generate QR</Button>
+          {qrUrl && (
+            <>
+              <Button onClick={downloadQrCode} className="ml-2">
+                Download
+              </Button>
+              <Button onClick={copyQrCodeUrl} className="ml-2">
+                Copy URL
+              </Button>
+              <img src={qrUrl} alt="QR Code" className="mx-auto mt-2" />
+            </>
+          )}
+        </>
+      ),
+    },
+    {
+      name: "YouTube Thumbnail Downloader",
+      description: "Get video thumbnails easily.",
+      render: () => (
+        <>
+          <input
+            type="text"
+            placeholder="YouTube URL"
+            value={youtubeUrl}
+            onChange={(e) => setYoutubeUrl(e.target.value)}
+            className="mb-2 px-3 py-2 w-full rounded border"
+          />
+          <Button onClick={generateThumbnail}>Generate</Button>
+          {thumbnailUrl && (
+            <>
+              <Button onClick={downloadThumbnail} className="ml-2">
+                Download
+              </Button>
+              <Button onClick={copyThumbnailUrl} className="ml-2">
+                Copy URL
+              </Button>
+              <img src={thumbnailUrl} alt="Thumbnail" className="mx-auto mt-2" />
+            </>
+          )}
+        </>
+      ),
+    },
+    {
+      name: "Image Converter",
+      description: "Convert images to different formats.",
+      render: () => (
+        <>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => e.target.files && setImageFile(e.target.files[0])}
+          />
+          <select
+            value={targetFormat}
+            onChange={(e) => setTargetFormat(e.target.value)}
+            className="ml-2 p-1 border rounded"
+          >
+            <option value="png">PNG</option>
+            <option value="jpg">JPG</option>
+            <option value="jpeg">JPEG</option>
+            <option value="webp">WebP</option>
+            <option value="bmp">BMP</option>
+            <option value="gif">GIF (static)</option>
+            <option value="tiff">TIFF (static)</option>
+          </select>
+          <Button onClick={handleImageConvert} className="ml-2">
+            Convert
+          </Button>
+          {convertedImage && (
+            <div className="mt-2">
+              <img src={convertedImage} alt="Converted" className="max-w-xs" />
+              <a
+                href={convertedImage}
+                download={`converted.${targetFormat}`}
+                className="block text-blue-500 underline"
+              >
+                Download
+              </a>
+            </div>
+          )}
+        </>
+      ),
+    },
+    {
+      name: "URL Shortener",
+      description: "Shorten long links with one click.",
+      render: () => (
+        <>
+          <input
+            type="text"
+            placeholder="Enter long URL"
+            value={longUrl}
+            onChange={(e) => setLongUrl(e.target.value)}
+            className="mb-2 px-3 py-2 w-full rounded border"
+          />
+          <Button onClick={shortenUrl}>Shorten</Button>
+          {shortUrl && (
+            <div className="mt-2">
+              <p className="mb-2">
+                Short URL:{" "}
+                <a
+                  href={shortUrl}
+                  target="_blank"
+                  className="text-blue-500 underline"
+                >
+                  {shortUrl}
+                </a>
+              </p>
+              <Button onClick={copyShortUrl}>Copy URL</Button>
+            </div>
+          )}
+        </>
+      ),
+    },
+   
+{
+  name: "Text-to-Speech",
+  description: "Convert text to speech and download as MP3.",
+  render: () => {
+    const [recordedAudio, setRecordedAudio] = useState<string | null>(null);
+
+    const speakAndDownloadMP3 = async () => {
+      if (!ttsText) return;
+
+      // 1️⃣ Use SpeechSynthesis to generate audio
+      const utterance = new SpeechSynthesisUtterance(ttsText);
+      if (selectedVoice) utterance.voice = selectedVoice;
+      utterance.rate = rate;
+      utterance.pitch = pitch;
+
+      // Create AudioContext to capture audio
+      const audioCtx = new AudioContext();
+      const dest = audioCtx.createMediaStreamDestination();
+      const mediaRecorder = new MediaRecorder(dest.stream);
+      const audioChunks: Blob[] = [];
+
+      mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
+      mediaRecorder.onstop = async () => {
+        const blob = new Blob(audioChunks, { type: "audio/webm" });
+        const arrayBuffer = await blob.arrayBuffer();
+
+        // Convert WebM to PCM using AudioContext
+        const decoded = await audioCtx.decodeAudioData(arrayBuffer);
+        const left = decoded.getChannelData(0);
+
+        // Encode to MP3 using lamejs
+        const mp3Encoder = new lamejs.Mp3Encoder(1, decoded.sampleRate, 128);
+        const samples = 1152;
+        const mp3Data: Uint8Array[] = [];
+
+        for (let i = 0; i < left.length; i += samples) {
+          const chunk = left.subarray(i, i + samples);
+          const mp3buf = mp3Encoder.encodeBuffer(chunk);
+          if (mp3buf.length > 0) mp3Data.push(mp3buf);
+        }
+
+        const mp3buf = mp3Encoder.flush();
+        if (mp3buf.length > 0) mp3Data.push(mp3buf);
+
+        const mp3Blob = new Blob(mp3Data, { type: "audio/mp3" });
+        const url = URL.createObjectURL(mp3Blob);
+        setRecordedAudio(url);
+      };
+
+      mediaRecorder.start();
+      window.speechSynthesis.speak(utterance);
+
+      utterance.onend = () => {
+        mediaRecorder.stop();
+      };
+    };
+
+    const downloadAudio = () => {
+      if (!recordedAudio) return;
+      const a = document.createElement("a");
+      a.href = recordedAudio;
+      a.download = "speech.mp3";
+      a.click();
+      URL.revokeObjectURL(recordedAudio);
+    };
+
+    return (
+      <>
+        <textarea
+          placeholder="Enter text..."
+          value={ttsText}
+          onChange={(e) => setTtsText(e.target.value)}
+          className="border p-2 rounded w-full h-32 mb-2"
         />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+        <div className="flex gap-2 mb-2 flex-wrap">
+          <select
+            value={selectedVoice?.name || ""}
+            onChange={(e) =>
+              setSelectedVoice(voices.find((v) => v.name === e.target.value) || null)
+            }
+            className="border p-1 rounded"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+            {voices.map((voice, i) => (
+              <option key={i} value={voice.name}>
+                {voice.name} ({voice.lang})
+              </option>
+            ))}
+          </select>
+          <input
+            type="number"
+            min="0.1"
+            max="3"
+            step="0.1"
+            value={rate}
+            onChange={(e) => setRate(Number(e.target.value))}
+            placeholder="Rate"
+            className="border p-1 rounded w-20"
+          />
+          <input
+            type="number"
+            min="0.1"
+            max="2"
+            step="0.1"
+            value={pitch}
+            onChange={(e) => setPitch(Number(e.target.value))}
+            placeholder="Pitch"
+            className="border p-1 rounded w-20"
+          />
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+        <div className="flex gap-2 flex-wrap">
+          <Button onClick={speakAndDownloadMP3}>Speak & Generate MP3</Button>
+          {recordedAudio && <Button onClick={downloadAudio}>Download MP3</Button>}
+        </div>
+      </>
+    );
+  },
+},
+
+  ];
+
+  const filteredTools = tools.filter((tool) =>
+    tool.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  return (
+    <div
+      className={
+        darkMode
+          ? "dark min-h-screen flex flex-col bg-gray-900 text-white"
+          : "min-h-screen flex flex-col bg-gray-50 text-gray-900"
+      }
+    >
+      {/* Google AdSense */}
+      <Script
+        id="adsense-script"
+        strategy="afterInteractive"
+        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-xxxxxxxx"
+        crossOrigin="anonymous"
+      />
+
+      {/* Header */}
+      <header className="bg-white dark:bg-gray-800 shadow p-4 flex flex-col md:flex-row justify-between items-center gap-2 md:gap-0">
+        <h1 className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+          YemaTool
+        </h1>
+        <nav className="space-x-4 flex flex-wrap gap-2 md:gap-4">
+          <button onClick={() => scrollToSection(homeRef)}>Home</button>
+          <button onClick={() => scrollToSection(toolsRef)}>Tools</button>
+          <button onClick={() => scrollToSection(aboutRef)}>About</button>
+          <button onClick={() => scrollToSection(contactRef)}>Contact</button>
+          <button onClick={() => setDarkMode(!darkMode)} className="ml-2">
+            {darkMode ? <Sun className="inline-block w-5 h-5" /> : <Moon className="inline-block w-5 h-5" />}
+          </button>
+        </nav>
+      </header>
+
+      {/* Home */}
+      <section
+        ref={homeRef}
+        className="text-center py-12 bg-gradient-to-r from-blue-100 to-blue-200"
+      >
+        <h2 className="text-3xl md:text-4xl font-bold mb-4">
+          Free Online Tools for Everyday Tasks
+        </h2>
+        <p className="text-gray-700 dark:text-gray-300 mb-6">
+          Fast, simple, and reliable utilities to save your time.
+        </p>
+        <input
+          type="text"
+          placeholder="Search a tool..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="px-4 py-2 rounded-lg shadow w-full md:w-1/2 max-w-lg"
+        />
+      </section>
+
+      {/* Tools */}
+      <section
+        ref={toolsRef}
+        className="py-10 px-2 md:px-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6"
+      >
+        {filteredTools.length > 0 ? (
+          filteredTools.map((tool) => (
+            <Card key={tool.name} className="shadow-lg">
+              <CardContent className="p-6 text-center">
+                <h3 className="text-xl font-semibold mb-2">{tool.name}</h3>
+                <p className="text-gray-600 dark:text-gray-300 mb-4">
+                  {tool.description}
+                </p>
+                {tool.render()}
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          <p className="col-span-full text-center text-gray-500 dark:text-gray-400">
+            No tools found for "{searchQuery}"
+          </p>
+        )}
+      </section>
+
+      {/* About */}
+      <section
+        ref={aboutRef}
+        className="py-10 px-6 bg-gray-100 dark:bg-gray-800"
+      >
+        <h2 className="text-2xl font-bold mb-4">About YemaTool</h2>
+        <p>
+          Toolya provides simple online tools for PDFs, QR codes, images,
+          thumbnails, links, and text-to-speech, all in one place.
+        </p>
+      </section>
+
+      {/* Contact */}
+      <section
+        ref={contactRef}
+        className="py-10 px-6 bg-gray-50 dark:bg-gray-900"
+      >
+        <h2 className="text-2xl font-bold mb-4">Contact</h2>
+        <p>Email: birhanu@YemaTool.com</p>
+        <p>Support: support@YemaTool.com</p>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-white dark:bg-gray-800 shadow mt-auto p-6 text-center text-gray-600 dark:text-gray-400">
+        <p>© {new Date().getFullYear()} Yema Tool. All rights reserved.</p>
+        <p className="text-sm">Developed by ❤️ by Birhanu</p>
       </footer>
     </div>
   );
