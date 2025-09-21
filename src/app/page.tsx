@@ -1,26 +1,13 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { Card, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import Script from "next/script";
 import { PDFDocument } from "pdf-lib";
 import QRCode from "qrcode";
-//import lamejs from "lamejs"; // <<--- MOVE IT HERE
-import {Sun, Moon,} from "lucide-react";
-/*import {
-  Sun,
-  Moon,
-  FileText,
-  Camera,
-  Link,
-  Code,
-  Calculator,
-  Image as ImageIcon,
-  Scissors,
-  Volume2,
-} from "lucide-react";
- */
+import { Sun, Moon } from "lucide-react";
+
 export default function ToolyaHomepage() {
   // Dark mode
   const [darkMode, setDarkMode] = useState(false);
@@ -231,35 +218,6 @@ export default function ToolyaHomepage() {
     alert("Short URL copied!");
   };
 
-  /** ---------------- TEXT-TO-SPEECH ----------------
-  const [ttsText, setTtsText] = useState("");
-  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
-  const [selectedVoice, setSelectedVoice] = useState<SpeechSynthesisVoice | null>(null);
-  const [rate, setRate] = useState(1);
-  const [pitch, setPitch] = useState(1); 
-
-  useEffect(() => {
-    const synth = window.speechSynthesis;
-    const loadVoices = () => {
-      const voiceList = synth.getVoices();
-      setVoices(voiceList);
-      if (voiceList.length > 0) setSelectedVoice(voiceList[0]);
-    };
-    loadVoices();
-    if (speechSynthesis.onvoiceschanged !== undefined) {
-      speechSynthesis.onvoiceschanged = loadVoices;
-    }
-  }, []);
-
-  const speakText = () => {
-    if (!ttsText) return;
-    const utterance = new SpeechSynthesisUtterance(ttsText);
-    if (selectedVoice) utterance.voice = selectedVoice;
-    utterance.rate = rate;
-    utterance.pitch = pitch;
-    window.speechSynthesis.speak(utterance);
-  };
-*/
   /** ---------------- TOOLS ---------------- */
   const tools = [
     {
@@ -440,125 +398,6 @@ export default function ToolyaHomepage() {
         </>
       ),
     },
-   /*
-{
-  name: "Text-to-Speech",
-  description: "Convert text to speech and download as MP3.",
-  render: () => {
-    const [recordedAudio, setRecordedAudio] = useState<string | null>(null);
-
-    const speakAndDownloadMP3 = async () => {
-      if (!ttsText) return;
-
-      // 1️ Use SpeechSynthesis to generate audio
-      const utterance = new SpeechSynthesisUtterance(ttsText);
-      if (selectedVoice) utterance.voice = selectedVoice;
-      utterance.rate = rate;
-      utterance.pitch = pitch;
-
-      // Create AudioContext to capture audio
-      const audioCtx = new AudioContext();
-      const dest = audioCtx.createMediaStreamDestination();
-      const mediaRecorder = new MediaRecorder(dest.stream);
-      const audioChunks: Blob[] = [];
-
-      mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
-      mediaRecorder.onstop = async () => {
-        const blob = new Blob(audioChunks, { type: "audio/webm" });
-        const arrayBuffer = await blob.arrayBuffer();
-
-        // Convert WebM to PCM using AudioContext
-        const decoded = await audioCtx.decodeAudioData(arrayBuffer);
-        const left = decoded.getChannelData(0);
-
-        // Encode to MP3 using lamejs
-        const mp3Encoder = new lamejs.Mp3Encoder(1, decoded.sampleRate, 128);
-        const samples = 1152;
-        const mp3Data: Uint8Array[] = [];
-
-        for (let i = 0; i < left.length; i += samples) {
-          const chunk = left.subarray(i, i + samples);
-          const mp3buf = mp3Encoder.encodeBuffer(chunk);
-          if (mp3buf.length > 0) mp3Data.push(mp3buf);
-        }
-
-        const mp3buf = mp3Encoder.flush();
-        if (mp3buf.length > 0) mp3Data.push(mp3buf);
-
-        const mp3Blob = new Blob(mp3Data, { type: "audio/mp3" });
-        const url = URL.createObjectURL(mp3Blob);
-        setRecordedAudio(url);
-      };
-
-      mediaRecorder.start();
-      window.speechSynthesis.speak(utterance);
-
-      utterance.onend = () => {
-        mediaRecorder.stop();
-      };
-    };
-
-    const downloadAudio = () => {
-      if (!recordedAudio) return;
-      const a = document.createElement("a");
-      a.href = recordedAudio;
-      a.download = "speech.mp3";
-      a.click();
-      URL.revokeObjectURL(recordedAudio);
-    };
-
-    return (
-      <>
-        <textarea
-          placeholder="Enter text..."
-          value={ttsText}
-          onChange={(e) => setTtsText(e.target.value)}
-          className="border p-2 rounded w-full h-32 mb-2"
-        />
-        <div className="flex gap-2 mb-2 flex-wrap">
-          <select
-            value={selectedVoice?.name || ""}
-            onChange={(e) =>
-              setSelectedVoice(voices.find((v) => v.name === e.target.value) || null)
-            }
-            className="border p-1 rounded"
-          >
-            {voices.map((voice, i) => (
-              <option key={i} value={voice.name}>
-                {voice.name} ({voice.lang})
-              </option>
-            ))}
-          </select>
-          <input
-            type="number"
-            min="0.1"
-            max="3"
-            step="0.1"
-            value={rate}
-            onChange={(e) => setRate(Number(e.target.value))}
-            placeholder="Rate"
-            className="border p-1 rounded w-20"
-          />
-          <input
-            type="number"
-            min="0.1"
-            max="2"
-            step="0.1"
-            value={pitch}
-            onChange={(e) => setPitch(Number(e.target.value))}
-            placeholder="Pitch"
-            className="border p-1 rounded w-20"
-          />
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          <Button onClick={speakAndDownloadMP3}>Speak & Generate MP3</Button>
-          {recordedAudio && <Button onClick={downloadAudio}>Download MP3</Button>}
-        </div>
-      </>
-    );
-  },
-},
-*/
   ];
 
   const filteredTools = tools.filter((tool) =>
@@ -573,7 +412,7 @@ export default function ToolyaHomepage() {
           : "min-h-screen flex flex-col bg-gray-50 text-gray-900"
       }
     >
-      {/* Google AdSense */}
+      {/* Google AdSense Script */}
       <Script
         id="adsense-script"
         strategy="afterInteractive"
@@ -584,7 +423,7 @@ export default function ToolyaHomepage() {
       {/* Header */}
       <header className="bg-white dark:bg-gray-800 shadow p-4 flex flex-col md:flex-row justify-between items-center gap-2 md:gap-0">
         <h1 className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-          YemaTool
+          Toolya
         </h1>
         <nav className="space-x-4 flex flex-wrap gap-2 md:gap-4">
           <button onClick={() => scrollToSection(homeRef)}>Home</button>
@@ -592,7 +431,11 @@ export default function ToolyaHomepage() {
           <button onClick={() => scrollToSection(aboutRef)}>About</button>
           <button onClick={() => scrollToSection(contactRef)}>Contact</button>
           <button onClick={() => setDarkMode(!darkMode)} className="ml-2">
-            {darkMode ? <Sun className="inline-block w-5 h-5" /> : <Moon className="inline-block w-5 h-5" />}
+            {darkMode ? (
+              <Sun className="inline-block w-5 h-5" />
+            ) : (
+              <Moon className="inline-block w-5 h-5" />
+            )}
           </button>
         </nav>
       </header>
@@ -616,6 +459,19 @@ export default function ToolyaHomepage() {
           className="px-4 py-2 rounded-lg shadow w-full md:w-1/2 max-w-lg"
         />
       </section>
+
+      {/* Google Ads block */}
+      <div className="w-full flex justify-center my-6">
+        <ins
+          className="adsbygoogle"
+          style={{ display: "block", width: "100%", height: "120px" }}
+          data-ad-client="ca-pub-xxxxxxxx" // replace with your client ID
+          data-ad-slot="xxxxxxxxxx" // replace with your slot ID
+          data-ad-format="auto"
+          data-full-width-responsive="true"
+        ></ins>
+        <Script id="ads-init">{`(adsbygoogle = window.adsbygoogle || []).push({});`}</Script>
+      </div>
 
       {/* Tools */}
       <section
@@ -646,10 +502,10 @@ export default function ToolyaHomepage() {
         ref={aboutRef}
         className="py-10 px-6 bg-gray-100 dark:bg-gray-800"
       >
-        <h2 className="text-2xl font-bold mb-4">About YemaTool</h2>
+        <h2 className="text-2xl font-bold mb-4">About Toolya</h2>
         <p>
           Toolya provides simple online tools for PDFs, QR codes, images,
-          thumbnails, links, and text-to-speech, all in one place.
+          thumbnails, and links — all in one place.
         </p>
       </section>
 
@@ -659,14 +515,13 @@ export default function ToolyaHomepage() {
         className="py-10 px-6 bg-gray-50 dark:bg-gray-900"
       >
         <h2 className="text-2xl font-bold mb-4">Contact</h2>
-        <p>Email: birhanu@YemaTool.com</p>
-        <p>Support: support@YemaTool.com</p>
+          <p>Support: brightalemneh@gmail.com</p>
       </section>
 
       {/* Footer */}
       <footer className="bg-white dark:bg-gray-800 shadow mt-auto p-6 text-center text-gray-600 dark:text-gray-400">
-        <p>© {new Date().getFullYear()} Yema Tool. All rights reserved.</p>
-        <p className="text-sm">Developed by ❤️ by Birhanu</p>
+        <p>© {new Date().getFullYear()} Toolya. All rights reserved.</p>
+        <p className="text-sm">Developed with ❤️ by Birhanu</p>
       </footer>
     </div>
   );
