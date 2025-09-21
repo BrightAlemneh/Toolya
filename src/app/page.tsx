@@ -18,9 +18,10 @@ export default function ToolyaHomepage() {
   const aboutRef = useRef<HTMLDivElement>(null);
   const contactRef = useRef<HTMLDivElement>(null);
 
-  const scrollToSection = (ref: React.RefObject<HTMLDivElement>) => {
-    ref.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  const scrollToSection = (ref: React.RefObject<HTMLDivElement | null>) => {
+  ref.current?.scrollIntoView({ behavior: "smooth" });
+};
+
 
   // Live search
   const [searchQuery, setSearchQuery] = useState("");
@@ -68,8 +69,9 @@ export default function ToolyaHomepage() {
       setMergeProgress(Math.round(((i + 1) / pdfFiles.length) * 100));
     }
 
-    const mergedPdfBytes = await mergedPdf.save();
-    const blob = new Blob([mergedPdfBytes], { type: "application/pdf" });
+   const mergedPdfBytes = await mergedPdf.save();
+const blob = new Blob([new Uint8Array(mergedPdfBytes)], { type: "application/pdf" });
+
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -108,7 +110,8 @@ export default function ToolyaHomepage() {
     }
 
     const newBytes = await newPdf.save();
-    const blob = new Blob([newBytes], { type: "application/pdf" });
+    const blob = new Blob([new Uint8Array(newBytes)], { type: "application/pdf" });
+
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
