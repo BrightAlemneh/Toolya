@@ -426,7 +426,7 @@ const blob = new Blob([new Uint8Array(mergedPdfBytes)], { type: "application/pdf
       {/* Header */}
       <header className="bg-white dark:bg-gray-800 shadow p-4 flex flex-col md:flex-row justify-between items-center gap-2 md:gap-0">
         <h1 className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-          Toolya
+          Yema Tools
         </h1>
         <nav className="space-x-4 flex flex-wrap gap-2 md:gap-4">
           <button onClick={() => scrollToSection(homeRef)}>Home</button>
@@ -505,9 +505,9 @@ const blob = new Blob([new Uint8Array(mergedPdfBytes)], { type: "application/pdf
         ref={aboutRef}
         className="py-10 px-6 bg-gray-100 dark:bg-gray-800"
       >
-        <h2 className="text-2xl font-bold mb-4">About Toolya</h2>
+        <h2 className="text-2xl font-bold mb-4">About YemaTools</h2>
         <p>
-          Toolya provides simple online tools for PDFs, QR codes, images,
+          YemaTool provides simple online tools for PDFs, QR codes, images,
           thumbnails, and links — all in one place.
         </p>
       </section>
@@ -523,7 +523,7 @@ const blob = new Blob([new Uint8Array(mergedPdfBytes)], { type: "application/pdf
 
       {/* Footer */}
       <footer className="bg-white dark:bg-gray-800 shadow mt-auto p-6 text-center text-gray-600 dark:text-gray-400">
-        <p>© {new Date().getFullYear()} Toolya. All rights reserved.</p>
+        <p>© {new Date().getFullYear()} YemaTools. All rights reserved.</p>
         <p className="text-sm">Developed with ❤️ by Birhanu</p>
       </footer>
     </div>
