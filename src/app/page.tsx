@@ -419,7 +419,7 @@ const blob = new Blob([new Uint8Array(mergedPdfBytes)], { type: "application/pdf
       <Script
         id="adsense-script"
         strategy="afterInteractive"
-        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-xxxxxxxx"
+        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1566008913479351"
         crossOrigin="anonymous"
       />
 
@@ -468,8 +468,8 @@ const blob = new Blob([new Uint8Array(mergedPdfBytes)], { type: "application/pdf
         <ins
           className="adsbygoogle"
           style={{ display: "block", width: "100%", height: "120px" }}
-          data-ad-client="ca-pub-xxxxxxxx" // replace with your client ID
-          data-ad-slot="xxxxxxxxxx" // replace with your slot ID
+          data-ad-client="ca-pub-1566008913479351" // replace with your client ID
+          data-ad-slot="4402949598" // replace with your slot ID
           data-ad-format="auto"
           data-full-width-responsive="true"
         ></ins>
