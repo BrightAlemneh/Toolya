@@ -492,7 +492,7 @@ export default function ToolyaHomepage() {
           ))
         ) : (
           <p className="col-span-full text-center text-gray-500 dark:text-gray-400">
-            No tools found for "{searchQuery}"
+            No tools found for {"searchQuery"}
           </p>
         )}
       </section>
