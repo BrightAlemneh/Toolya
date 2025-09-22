@@ -432,7 +432,9 @@ const blob = new Blob([new Uint8Array(mergedPdfBytes)], { type: "application/pdf
           <button onClick={() => scrollToSection(homeRef)}>Home</button>
           <button onClick={() => scrollToSection(toolsRef)}>Tools</button>
           <button onClick={() => scrollToSection(aboutRef)}>About</button>
-          <button onClick={() => scrollToSection(contactRef)}>Contact</button>
+          
+          <button onClick={() => window.location.href = "/contact"}>Contact</button>
+
           <button onClick={() => setDarkMode(!darkMode)} className="ml-2">
             {darkMode ? (
               <Sun className="inline-block w-5 h-5" />
