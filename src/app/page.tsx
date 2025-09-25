@@ -526,7 +526,7 @@ const blob = new Blob([new Uint8Array(mergedPdfBytes)], { type: "application/pdf
       {/* Footer */}
       <footer className="bg-white dark:bg-gray-800 shadow mt-auto p-6 text-center text-gray-600 dark:text-gray-400">
         <p>© {new Date().getFullYear()} YemaTools. All rights reserved.</p>
-        <p className="text-sm">Developed with ❤️ by Birhanu</p>
+        <p className="text-sm">Developed❤️ by Birhanu</p>
         <a
     href="/privacy"
     className="text-blue-600 underline hover:text-blue-800"
